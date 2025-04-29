@@ -4,6 +4,8 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import myUserRoute from "./routes/MyUserRoute";
 import restaurantRoute from "./routes/RestaurantRoute";
+import { router as orderRoute } from "./routes/OrderRoute";
+import openOrderRoute from "./routes/OpenOrderRoute";
 
 mongoose
   .connect(process.env["MONGODB_CONNECTION_STRING"] as string)
@@ -25,6 +27,9 @@ app.use("/api/my/user", myUserRoute);
 
 app.use("/api/restaurant", restaurantRoute);
 
+app.use("/api/order", orderRoute);
+
+app.use("/api", openOrderRoute); // Add the routes to the app under `/api`
 app.listen(7000, () => {
   console.log("server started on localhost:7000");
 });

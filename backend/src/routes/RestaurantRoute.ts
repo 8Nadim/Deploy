@@ -28,6 +28,8 @@ router.post(
   addRestaurant
 );
 
+router.get("/search", searchRestaurant);
+
 router.get(
   "/:restaurantId",
   param("restaurantId")
