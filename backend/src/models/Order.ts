@@ -11,11 +11,11 @@ const orderSchema = new mongoose.Schema({
       name: String,
       quantity: Number,
       price: Number,
-      user: String, // could be anonymous
+      user: String,
     },
   ],
   totalCost: Number,
-  participants: [String], // just usernames or names
+  participants: [String],
   collectionPoint: String,
   status: {
     type: String,

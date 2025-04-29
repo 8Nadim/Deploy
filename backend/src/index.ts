@@ -29,7 +29,7 @@ app.use("/api/restaurant", restaurantRoute);
 
 app.use("/api/order", orderRoute);
 
-app.use("/api", openOrderRoute); // Add the routes to the app under `/api`
+app.use("/api", openOrderRoute);
 app.listen(7000, () => {
   console.log("server started on localhost:7000");
 });
