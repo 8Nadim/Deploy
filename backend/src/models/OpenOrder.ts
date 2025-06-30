@@ -1,23 +1,42 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Types, Schema } from "mongoose";
 
-const OpenOrderSchema = new mongoose.Schema(
+export interface Participant {
+  userId: Types.ObjectId | string;
+  name?: string;
+  items: string[];
+  amountOwed?: number;
+}
+
+export interface OpenOrderDoc extends Document {
+  restaurantId: Types.ObjectId | string;
+  host: string;
+  participants: Types.DocumentArray<Participant>;
+  totalPrice: number;
+  deliveryLocation: string;
+  isClosed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ParticipantSchema = new Schema<Participant>({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  name: { type: String },
+  items: [{ type: String }],
+  amountOwed: { type: Number, default: 0 },
+});
+
+const OpenOrderSchema = new Schema<OpenOrderDoc>(
   {
     restaurantId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Restaurant",
       required: true,
     },
     host: {
       type: String,
-      required: true, // replace with userId if user auth is set up
+      required: true,
     },
-    participants: [
-      {
-        name: String,
-        items: [String],
-        amountOwed: Number,
-      },
-    ],
+    participants: [ParticipantSchema],
     totalPrice: {
       type: Number,
       required: true,
@@ -34,4 +53,4 @@ const OpenOrderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("OpenOrder", OpenOrderSchema);
+export default mongoose.model<OpenOrderDoc>("OpenOrder", OpenOrderSchema);
