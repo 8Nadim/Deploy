@@ -3,14 +3,17 @@ import mongoose, { Document, Types, Schema } from "mongoose";
 export interface Participant {
   userId: Types.ObjectId | string;
   name?: string;
-  items: string[];
+  items: {
+    name: string;
+    price: number;
+  }[];
   amountOwed?: number;
 }
 
 export interface OpenOrderDoc extends Document {
   restaurantId: Types.ObjectId | string;
   host: string;
-  participants: Types.DocumentArray<Participant>;
+  participants: Participant[];
   totalPrice: number;
   deliveryLocation: string;
   isClosed: boolean;
@@ -18,12 +21,20 @@ export interface OpenOrderDoc extends Document {
   updatedAt: Date;
 }
 
-const ParticipantSchema = new Schema<Participant>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  name: { type: String },
-  items: [{ type: String }],
-  amountOwed: { type: Number, default: 0 },
-});
+const ParticipantSchema = new Schema<Participant>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    name: { type: String },
+    items: [
+      {
+        name: { type: String, required: true },
+        price: { type: Number, required: true },
+      },
+    ],
+    amountOwed: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
 
 const OpenOrderSchema = new Schema<OpenOrderDoc>(
   {

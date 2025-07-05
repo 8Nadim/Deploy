@@ -4,7 +4,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import myUserRoute from "./routes/MyUserRoute";
 import restaurantRoute from "./routes/RestaurantRoute";
-import { router as orderRoute } from "./routes/OrderRoute";
+import orderRoute from "./routes/OrderRoute";
 import openOrderRoute from "./routes/OpenOrderRoute";
 
 mongoose
@@ -27,9 +27,9 @@ app.use("/api/my/user", myUserRoute);
 
 app.use("/api/restaurant", restaurantRoute);
 
-app.use("/api/order", orderRoute);
+app.use("/api/orders", orderRoute);
 
-app.use("/api", openOrderRoute);
+app.use("/api/open-order", openOrderRoute);
 app.listen(7000, () => {
   console.log("server started on localhost:7000");
 });

@@ -1,8 +1,10 @@
-module.exports = {
-  id: "resto1",
-  name: "Demo Pizza Place",
-  items: [
-    { id: "item1", name: "Pepperoni Pizza", price: 12.99 },
-    { id: "item2", name: "Margherita Pizza", price: 10.99 },
-  ],
-};
+export const RestaurantData = [
+  {
+    id: "6680c25c7b1bd1d02d34cf9d9",
+    name: "Pizza Palace",
+    menu: [
+      { id: "item1", name: "Pepperoni", price: 8.99 },
+      { id: "item2", name: "Margherita", price: 7.99 },
+    ],
+  },
+];

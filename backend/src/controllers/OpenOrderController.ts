@@ -1,79 +1,107 @@
 import { Request, Response } from "express";
-import OpenOrder from "../models/OpenOrder";
 import mongoose from "mongoose";
+import OpenOrder from "../models/OpenOrder";
 
-// POST /api/open-order — create an open order
+// POST /api/open-orders — create an open order
+
 export const createOpenOrder = async (req: Request, res: Response) => {
   try {
-    const openOrder = await OpenOrder.create(req.body);
-    res.status(201).json(openOrder);
+    console.log("Incoming open order data (demo mode):", req.body);
+
+    const fakeOpenOrder = {
+      _id: "demoopenorderid123456789012345",
+      restaurantId: "demo_restaurant_id_1234567890",
+      items: [{ name: "Demo Sushi", price: 12.99 }],
+      totalPrice: 12.99,
+      deliveryLocation: "Demo Location",
+      host: "Demo Host",
+      isClosed: false,
+      participants: [],
+      createdAt: new Date(),
+    };
+
+    return res.status(201).json({
+      message: "Open order created",
+      data: fakeOpenOrder,
+    });
   } catch (err) {
-    res
+    return res
       .status(500)
       .json({ message: "Failed to create open order", error: err });
   }
 };
 
-// GET /api/open-order — get all open orders
+// GET /api/open-orders — get all open orders
 export const getAllOpenOrders = async (_req: Request, res: Response) => {
   try {
     const openOrders = await OpenOrder.find().populate("restaurantId");
-    res.json({ data: openOrders });
+    return res.json({ data: openOrders });
   } catch (err) {
-    res
+    return res
       .status(500)
       .json({ message: "Failed to fetch open orders", error: err });
   }
 };
 
-// POST /api/open-order/join — join an open order
-export const joinOpenOrder = async (req: Request, res: Response) => {
+// GET /api/open-orders/:orderId — get an open order by ID
+export const getOpenOrderById = async (req: Request, res: Response) => {
   try {
-    const { orderId, userId, name, items, amountOwed } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      return res.status(400).json({ message: "Invalid order ID format" });
-    }
-
-    if (!userId) {
-      return res.status(400).json({ message: "Missing userId" });
-    }
-
-    const order = await OpenOrder.findById(orderId);
+    const order = await OpenOrder.findById(req.params["orderId"]);
     if (!order) {
       return res.status(404).json({ message: "Open order not found" });
     }
+    return res.json({ data: order });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err });
+  }
+};
 
-    // Find participant safely
-    const participantIndex = order.participants.findIndex(
-      (p) => p.userId && p.userId.toString() === userId
+// POST /api/open-orders/join — join an open order
+export const joinOpenOrder = async (req: Request, res: Response) => {
+  try {
+    const { orderId, userId, name, items } = req.body;
+
+    if (!orderId || !userId || !name) {
+      return res
+        .status(400)
+        .json({ message: "Missing orderId, userId, or name" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: "Invalid orderId format" });
+    }
+
+    const openOrder = await OpenOrder.findById(orderId);
+    if (!openOrder) {
+      return res.status(404).json({ message: "Open order not found" });
+    }
+
+    const amountOwed = Array.isArray(items)
+      ? items.reduce((sum, item) => sum + (item.price || 0), 0)
+      : 0;
+
+    const existingParticipant = openOrder.participants.find(
+      (p) => p.userId.toString() === userId
     );
 
-    if (participantIndex !== -1) {
-      const participant = order.participants[participantIndex];
-      if (participant) {
-        participant.items = items || [];
-        participant.amountOwed = amountOwed || 0;
-      }
+    if (existingParticipant) {
+      existingParticipant.name = name;
+      existingParticipant.items = items;
+      existingParticipant.amountOwed = amountOwed;
     } else {
-      order.participants.push({ userId, name, items, amountOwed });
+      openOrder.participants.push({ userId, name, items, amountOwed });
     }
 
-    // In-place remove broken participants
-    for (let i = order.participants.length - 1; i >= 0; i--) {
-      const participant = order.participants[i];
-      if (!participant || !participant.userId) {
-        order.participants.splice(i, 1);
-      }
-    }
+    await openOrder.save();
 
-    await order.save();
-
-    return res.status(200).json({ message: "Joined open order", order });
+    return res
+      .status(200)
+      .json({ message: "Joined open order", data: openOrder });
   } catch (err) {
     console.error("JOIN ERROR:", err);
-    return res
-      .status(500)
-      .json({ message: "Failed to join open order", error: err });
+    return res.status(500).json({
+      message: "Failed to join open order",
+      error: (err as Error).message,
+    });
   }
 };

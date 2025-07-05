@@ -43,9 +43,9 @@ const orderSchema = new Schema<OrderDoc>({
       user: String,
     },
   ],
-  totalCost: Number,
+  totalCost: { type: Number, required: true },
   participants: [participantSchema],
-  collectionPoint: String,
+  collectionPoint: { type: String, required: true },
   status: {
     type: String,
     enum: ["open", "closed", "completed"],
