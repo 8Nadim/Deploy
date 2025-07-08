@@ -5,7 +5,16 @@ interface Participant {
   name?: string | null;
   items: string[];
   amountOwed?: number | null;
+  hasPaid?: boolean;
 }
+
+const participantSchema = new Schema<Participant>({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  name: { type: String, default: null },
+  items: [{ type: String }],
+  amountOwed: { type: Number, default: 0 },
+  hasPaid: { type: Boolean, default: false },
+});
 
 interface OrderDoc extends Document {
   restaurantId: Types.ObjectId | string;
@@ -21,13 +30,6 @@ interface OrderDoc extends Document {
   status: "open" | "closed" | "completed";
   createdAt: Date;
 }
-
-const participantSchema = new Schema<Participant>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  name: { type: String, default: null },
-  items: [{ type: String }],
-  amountOwed: { type: Number, default: 0 },
-});
 
 const orderSchema = new Schema<OrderDoc>({
   restaurantId: {

@@ -9,6 +9,8 @@ import CreateOrder from "./pages/CreateOrder";
 import JoinOrder from "./pages/JoinOrder";
 import OrderDetails from "./pages/OrderDetailsPage";
 import ChooseRestaurant from "@/pages/ChooseRestaurant";
+import OrderConfirmationPage from "./pages/OrderConfirmationPage";
+import OpenOrdersList from "./pages/OpenOrdersList";
 
 const AppRoutes = () => {
   return (
@@ -72,6 +74,24 @@ const AppRoutes = () => {
           </Layout>
         }
       />
+      <Route
+        path="/order-confirmation"
+        element={
+          <Layout showHero={false}>
+            <OrderConfirmationPage />
+          </Layout>
+        }
+      />
+
+      <Route
+        path="/open-orders"
+        element={
+          <Layout showHero={false}>
+            <OpenOrdersList />
+          </Layout>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

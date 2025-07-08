@@ -11,7 +11,7 @@ const HomePage = () => {
         const response = await fetch("http://localhost:7000/api/my/user");
         if (response.ok) {
           const data = await response.json();
-          console.log("Fetched User:", data); // Log user data
+          console.log("Fetched User:", data);
         } else {
           console.error("Failed to fetch user data");
         }
@@ -38,6 +38,7 @@ const HomePage = () => {
         </h1>
         <span className="text-xl">Food is just a click away!</span>
       </div>
+
       <div className="grid md:grid-cols-2 gap-5">
         <img src={landingImage} />
         <div className="flex flex-col items-center justify-center gap-4 text-center">
@@ -49,13 +50,44 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Add the button here */}
+      {/* Existing buttons */}
       <div className="flex justify-center mt-6">
         <Link to="/choose-restaurant">
           <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
             View Restaurants
           </button>
         </Link>
+      </div>
+
+      <div className="flex justify-center mt-6">
+        <Link to="/open-orders">
+          <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+            View Open Orders
+          </button>
+        </Link>
+      </div>
+
+      {/* NEW BUTTON */}
+      <div className="flex justify-center mt-6">
+        <button
+          onClick={() => {
+            const lastOrderId = localStorage.getItem("lastOrderId");
+            const lastOrderType = localStorage.getItem("lastOrderType");
+
+            if (lastOrderId) {
+              const path =
+                lastOrderType === "open"
+                  ? `/open-order-details/${lastOrderId}`
+                  : `/order-details/${lastOrderId}`;
+              window.location.href = path;
+            } else {
+              alert("No recent order found.");
+            }
+          }}
+          className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition"
+        >
+          View My Last Order
+        </button>
       </div>
     </div>
   );

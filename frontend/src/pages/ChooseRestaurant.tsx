@@ -14,10 +14,8 @@ export default function ChooseRestaurant() {
     setCart((prev) => [...prev, item]);
   }
 
-  function removeFromCart(itemId: string) {
-    setCart((prev) =>
-      prev.filter((item, i) => i !== prev.findIndex((it) => it.id === itemId))
-    );
+  function removeFromCart(indexToRemove: number) {
+    setCart((prev) => prev.filter((_, i) => i !== indexToRemove));
   }
 
   async function placeOrder() {
@@ -27,7 +25,7 @@ export default function ChooseRestaurant() {
     const total = cart.reduce((sum, item) => sum + item.price, 0);
 
     const normalOrderPayload = {
-      restaurantId: selectedRestaurant.id, // <- this is probably "1" etc.
+      restaurantId: selectedRestaurant.id,
       participants: [],
       totalPrice: total,
       totalCost: total,
@@ -78,6 +76,7 @@ export default function ChooseRestaurant() {
       }
 
       const data = await res.json();
+      localStorage.setItem("lastOrderId", data.data._id); // <--- STORE ID
       alert("Order placed! ID: " + data.data._id);
       window.location.href = `/order-details/${data.data._id}`;
     } catch (err: any) {
@@ -144,7 +143,7 @@ export default function ChooseRestaurant() {
                     {item.name} (£{item.price.toFixed(2)})
                   </span>
                   <button
-                    onClick={() => removeFromCart(item.id)}
+                    onClick={() => removeFromCart(i)}
                     className="text-red-500 hover:underline"
                   >
                     Remove

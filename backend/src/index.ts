@@ -7,9 +7,12 @@ import restaurantRoute from "./routes/RestaurantRoute";
 import orderRoute from "./routes/OrderRoute";
 import openOrderRoute from "./routes/OpenOrderRoute";
 
+console.log("[server] Starting up...");
+
 mongoose
   .connect(process.env["MONGODB_CONNECTION_STRING"] as string)
-  .then(() => console.log("Connected to database"));
+  .then(() => console.log("[server] Connected to database"))
+  .catch((err) => console.error("[server] DB connection error:", err));
 
 const app = express();
 
@@ -24,12 +27,11 @@ app.use(
 app.use(express.json());
 
 app.use("/api/my/user", myUserRoute);
-
 app.use("/api/restaurant", restaurantRoute);
-
 app.use("/api/orders", orderRoute);
+app.use("/api/open-orders", openOrderRoute);
 
-app.use("/api/open-order", openOrderRoute);
-app.listen(7000, () => {
-  console.log("server started on localhost:7000");
+const PORT = 7000;
+app.listen(PORT, () => {
+  console.log(`[server] Server started on http://localhost:${PORT}`);
 });

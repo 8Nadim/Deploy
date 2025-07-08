@@ -41,10 +41,10 @@ const RestaurantPage = () => {
       const payload = {
         restaurantName: restaurant.name,
         city: restaurant.location,
-        country: "UK", // placeholder
+        country: "UK",
         cuisines: restaurant.menuItems,
-        deliveryPrice: 5.99, // placeholder
-        estimatedDeliveryTime: 30, // placeholder
+        deliveryPrice: 5.99,
+        estimatedDeliveryTime: 30,
         imageUrl: "http://example.com/image.jpg",
       };
 

@@ -12,9 +12,9 @@ export default function CreateOrder() {
     e.preventDefault();
 
     const data = {
-      restaurantId,
+      restaurantName: restaurantId,
       host,
-      totalPrice: parseFloat(totalPrice),
+      totalCost: parseFloat(totalPrice),
       deliveryLocation,
       isClosed: false,
       participants: [],
@@ -30,8 +30,8 @@ export default function CreateOrder() {
       if (!res.ok) throw new Error("Failed to create order");
 
       const json = await res.json();
-      alert("Order created! Order ID: " + json._id);
-      navigate("/open-orders"); // redirect to orders list
+
+      navigate("/order-confirmation", { state: { order: json } });
     } catch (err) {
       alert("Error creating order: " + (err as Error).message);
     }

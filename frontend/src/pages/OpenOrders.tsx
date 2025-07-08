@@ -18,7 +18,7 @@ const OpenOrders: React.FC = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await fetch("http://localhost:7000/api/open-order");
+        const res = await fetch("http://localhost:7000/api/open-orders");
         if (!res.ok) throw new Error("Failed to fetch orders");
         const data = await res.json();
         setOrders(data.data || []);

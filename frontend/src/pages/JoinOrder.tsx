@@ -16,7 +16,7 @@ export default function JoinOrder() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const res = await fetch("http://localhost:7000/api/open-order");
+        const res = await fetch("http://localhost:7000/api/open-orders");
         const data = await res.json();
         const found = data.data.find((o: any) => o._id === orderId);
         if (found) setOrderInfo(found);
@@ -40,7 +40,7 @@ export default function JoinOrder() {
     }
 
     try {
-      const res = await fetch("http://localhost:7000/api/open-order/join", {
+      const res = await fetch("http://localhost:7000/api/open-orders/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

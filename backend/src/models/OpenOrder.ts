@@ -8,17 +8,7 @@ export interface Participant {
     price: number;
   }[];
   amountOwed?: number;
-}
-
-export interface OpenOrderDoc extends Document {
-  restaurantId: Types.ObjectId | string;
-  host: string;
-  participants: Participant[];
-  totalPrice: number;
-  deliveryLocation: string;
-  isClosed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  hasPaid?: boolean;
 }
 
 const ParticipantSchema = new Schema<Participant>(
@@ -32,9 +22,21 @@ const ParticipantSchema = new Schema<Participant>(
       },
     ],
     amountOwed: { type: Number, default: 0 },
+    hasPaid: { type: Boolean, default: false },
   },
   { _id: false }
 );
+
+export interface OpenOrderDoc extends Document {
+  restaurantId: Types.ObjectId | string;
+  host: string;
+  participants: Participant[];
+  totalPrice: number;
+  deliveryLocation: string;
+  isClosed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const OpenOrderSchema = new Schema<OpenOrderDoc>(
   {
