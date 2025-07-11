@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:7000", { withCredentials: true });
 
 interface Participant {
   name?: string;
   items: any[];
   amountOwed?: number;
+  userId?: string;
 }
 
 interface OrderData {
@@ -27,47 +31,92 @@ const OrderDetailsPage = () => {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [isOpenOrder, setIsOpenOrder] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [error, setError] = useState("");
+  const [chatMessages, setChatMessages] = useState<
+    { name: string; message: string }[]
+  >([]);
+  const [chatInput, setChatInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  const [searchParams] = useSearchParams();
+
+  // Get userId and name from URL params or fallback to localStorage
+  const userIdParam = searchParams.get("userId");
+  const userNameParam = searchParams.get("name");
+
+  const userId = userIdParam || localStorage.getItem("userId") || "";
+  const userName = userNameParam || localStorage.getItem("userName") || "";
+
+  // Store user info in localStorage if came from URL
+  useEffect(() => {
+    if (userIdParam) localStorage.setItem("userId", userIdParam);
+    if (userNameParam) localStorage.setItem("userName", userNameParam);
+  }, [userIdParam, userNameParam]);
+
+  // Fetch order with userId to verify access
   useEffect(() => {
     if (!orderId) return;
 
     const fetchOrder = async () => {
       try {
-        console.log("[Frontend] Fetching normal order with ID:", orderId);
-        let res = await fetch(`http://localhost:7000/api/orders/${orderId}`);
-
-        if (res.ok) {
-          const data = await res.json();
-          console.log("[Frontend] Normal order fetched:", data);
-
-          setIsOpenOrder(data.isOpenOrder ?? false);
-          setOrder({ ...data });
-          return;
-        }
-
-        console.log(
-          "[Frontend] Normal order not found, trying open order:",
-          orderId
+        const res = await fetch(
+          `http://localhost:7000/api/open-orders/${orderId}?userId=${userId}`
         );
-        res = await fetch(`http://localhost:7000/api/open-orders/${orderId}`);
 
-        if (res.ok) {
-          const data = await res.json();
-          console.log("[Frontend] Open order fetched:", data);
-          setIsOpenOrder(true);
-          setOrder({ ...data, isOpenOrder: true });
+        if (res.status === 403) {
+          setError(
+            "Access denied. You must join this order to view details and chat."
+          );
           return;
         }
 
-        console.error("[Frontend] Order not found for ID:", orderId);
-      } catch (err) {
-        console.error("[Frontend] Failed to fetch order:", err);
+        if (!res.ok) {
+          setError("Failed to fetch order details.");
+          return;
+        }
+
+        const data = await res.json();
+        setIsOpenOrder(data.isOpenOrder ?? false);
+        setOrder(data);
+      } catch {
+        setError("Error fetching order details.");
       }
     };
 
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, userId]);
+
+  // Setup socket chat only if order loaded and no error
+  useEffect(() => {
+    if (!orderId || error) return;
+
+    socket.emit("join-room", orderId);
+
+    socket.on("chat-message", (msg) => {
+      setChatMessages((prev) => [...prev, msg]);
+      // Scroll to bottom on new message
+      setTimeout(
+        () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+        50
+      );
+    });
+
+    return () => {
+      socket.off("chat-message");
+    };
+  }, [orderId, error]);
+
+  const sendChatMessage = () => {
+    if (chatInput.trim() && order) {
+      socket.emit("chat-message", {
+        roomId: orderId,
+        name: userName || "Unknown",
+        message: chatInput,
+      });
+      setChatInput("");
+    }
+  };
 
   const handlePayment = async () => {
     if (!order) return;
@@ -77,7 +126,7 @@ const OrderDetailsPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: order._id,
-          participantName: "User",
+          participantName: userName || "User",
         }),
       });
 
@@ -90,12 +139,40 @@ const OrderDetailsPage = () => {
           `❌ Payment failed: ${data.message || "Unknown error"}`
         );
       }
-    } catch (err) {
+    } catch {
       setPaymentStatus("❌ Payment request failed.");
     }
   };
 
-  if (!order) return <div className="p-8">Loading order details...</div>;
+  // Leave order handler
+  const handleLeaveOrder = async () => {
+    if (!orderId || !userId) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:7000/api/open-orders/${orderId}/leave`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Leave order failed");
+
+      alert("You have left the order.");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userName");
+      navigate("/open-orders");
+    } catch (err: any) {
+      alert(`Error leaving order: ${err.message}`);
+    }
+  };
+
+  if (error) return <p className="p-4 text-red-600">{error}</p>;
+  if (!order) return <p className="p-4">Loading order details...</p>;
 
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-4">
@@ -135,7 +212,7 @@ const OrderDetailsPage = () => {
         </>
       )}
 
-      <div className="mt-4">
+      <div>
         <h2 className="text-xl font-semibold">Participants:</h2>
         {order.participants?.length === 0 ? (
           <p>No participants</p>
@@ -152,18 +229,56 @@ const OrderDetailsPage = () => {
       </div>
 
       {!order.isClosed && (
-        <div className="mt-4">
+        <>
+          <div>
+            <button
+              onClick={handlePayment}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Pay Order
+            </button>
+            {paymentStatus && (
+              <p className="mt-2 text-sm text-gray-700">{paymentStatus}</p>
+            )}
+          </div>
           <button
-            onClick={handlePayment}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            onClick={handleLeaveOrder}
+            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
           >
-            Pay Order
+            Leave Order
           </button>
-          {paymentStatus && (
-            <p className="mt-2 text-sm text-gray-700">{paymentStatus}</p>
-          )}
-        </div>
+        </>
       )}
+
+      {/* Chat box */}
+      <div className="mt-8 border-t pt-4">
+        <h2 className="text-xl font-semibold mb-2">Chat</h2>
+        <div className="h-40 overflow-y-auto border rounded p-2 bg-gray-50">
+          {chatMessages.map((msg, i) => (
+            <div key={i}>
+              <strong>{msg.name}:</strong> {msg.message}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+        <div className="flex mt-2">
+          <input
+            className="flex-1 border p-2 rounded-l"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="Type a message..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") sendChatMessage();
+            }}
+          />
+          <button
+            onClick={sendChatMessage}
+            className="bg-blue-600 text-white px-4 rounded-r hover:bg-blue-700"
+          >
+            Send
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -13,7 +13,7 @@ export interface Participant {
 
 const ParticipantSchema = new Schema<Participant>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String },
     name: { type: String },
     items: [
       {

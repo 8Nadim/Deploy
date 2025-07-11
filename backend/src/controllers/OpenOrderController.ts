@@ -1,5 +1,3 @@
-// OpenOrderController.ts
-
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import OpenOrder from "../models/OpenOrder";
@@ -53,9 +51,21 @@ export const getAllOpenOrders = async (_req: Request, res: Response) => {
 // GET /api/open-orders/:orderId — get an open order by ID
 export const getOpenOrderById = async (req: Request, res: Response) => {
   const { orderId } = req.params;
-  console.log("[getOpenOrderById] Request for orderId:", orderId);
+  const userId = req.query["userId"] as string; // Expect from frontend as query param
+
+  console.log(
+    "[getOpenOrderById] Request for orderId:",
+    orderId,
+    "userId:",
+    userId
+  );
+
+  if (!userId) {
+    return res.status(400).json({ message: "Missing userId" });
+  }
 
   if (orderId === "demoopenorderid123456789012345") {
+    // Demo order allows any user for now
     const demoOrder = {
       _id: "demoopenorderid123456789012345",
       restaurantId: "Demo Sushi Place",
@@ -64,24 +74,46 @@ export const getOpenOrderById = async (req: Request, res: Response) => {
       deliveryLocation: "Demo Location",
       host: "Demo Host",
       isClosed: false,
-      participants: [],
+      participants: [
+        {
+          userId: "679d756c2de0b9feee5ff651",
+          name: "Demo Host",
+          items: [],
+          amountOwed: 0,
+        },
+      ],
       createdAt: new Date().toISOString(),
       isOpenOrder: true,
     };
-    console.log("[getOpenOrderById] Returning demo order:", demoOrder);
+
+    // Check if user is participant or host
+    const isAllowed =
+      demoOrder.host === userId ||
+      demoOrder.participants.some((p) => p.userId === userId);
+
+    if (!isAllowed) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     return res.json(demoOrder);
   }
 
   try {
     const openOrder = await OpenOrder.findById(orderId);
     if (!openOrder) {
-      console.warn("[getOpenOrderById] Open order not found:", orderId);
       return res.status(404).json({ message: "Open order not found" });
     }
-    console.log("[getOpenOrderById] Found open order:", openOrder);
+
+    const isParticipantOrHost =
+      openOrder.host?.toString() === userId ||
+      openOrder.participants.some((p) => p.userId.toString() === userId);
+
+    if (!isParticipantOrHost) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     return res.json(openOrder);
   } catch (error) {
-    console.error("[getOpenOrderById] Server error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -110,25 +142,22 @@ export const joinOpenOrder = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Open order not found" });
     }
 
-    const amountOwed = Array.isArray(items)
-      ? items.reduce((sum, item) => sum + (item.price || 0), 0)
-      : 0;
-
-    console.log("[joinOpenOrder] Calculated amountOwed:", amountOwed);
-
+    // Check if user already joined
     const existingParticipant = openOrder.participants.find(
       (p) => p.userId.toString() === userId
     );
 
     if (existingParticipant) {
-      console.log("[joinOpenOrder] Updating existing participant");
-      existingParticipant.name = name;
-      existingParticipant.items = items;
-      existingParticipant.amountOwed = amountOwed;
-    } else {
-      console.log("[joinOpenOrder] Adding new participant");
-      openOrder.participants.push({ userId, name, items, amountOwed });
+      return res.status(409).json({
+        message: "User already joined this order",
+      });
     }
+
+    const amountOwed = Array.isArray(items)
+      ? items.reduce((sum, item) => sum + (item.price || 0), 0)
+      : 0;
+
+    openOrder.participants.push({ userId, name, items, amountOwed });
 
     await openOrder.save();
 
@@ -142,5 +171,44 @@ export const joinOpenOrder = async (req: Request, res: Response) => {
       message: "Failed to join open order",
       error: (err as Error).message,
     });
+  }
+};
+
+// DELETE /api/open-orders/:orderId/leave — leave an open order
+export const leaveOpenOrder = async (req: Request, res: Response) => {
+  const { orderId } = req.params;
+  const { userId } = req.body;
+
+  if (!orderId || !userId) {
+    return res.status(400).json({ message: "Missing orderId or userId" });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(orderId)) {
+    return res.status(400).json({ message: "Invalid orderId format" });
+  }
+
+  try {
+    const openOrder = await OpenOrder.findById(orderId);
+    if (!openOrder) {
+      return res.status(404).json({ message: "Open order not found" });
+    }
+
+    const index = openOrder.participants.findIndex(
+      (p) => p.userId.toString() === userId
+    );
+
+    if (index === -1) {
+      return res.status(404).json({ message: "User not part of this order" });
+    }
+
+    openOrder.participants.splice(index, 1);
+
+    await openOrder.save();
+
+    return res
+      .status(200)
+      .json({ message: "Left open order", data: openOrder });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to leave open order" });
   }
 };

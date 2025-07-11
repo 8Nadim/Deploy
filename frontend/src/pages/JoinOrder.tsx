@@ -1,4 +1,3 @@
-// src/pages/JoinOrder.tsx
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -8,9 +7,13 @@ export default function JoinOrder() {
   const [orderInfo, setOrderInfo] = useState<any>(null);
   const [error, setError] = useState("");
 
-  const userId = "679d756c2de0b9feee5ff651"; // replace with Auth0 later
-
-  const [name, setName] = useState("");
+  // Load from localStorage or blank
+  const [userId, setUserId] = useState(
+    () => localStorage.getItem("userId") || ""
+  );
+  const [name, setName] = useState(
+    () => localStorage.getItem("userName") || ""
+  );
   const [item, setItem] = useState("");
 
   useEffect(() => {
@@ -30,6 +33,10 @@ export default function JoinOrder() {
   }, [orderId]);
 
   const handleJoin = async () => {
+    if (!userId.trim()) {
+      setError("Please enter your User ID.");
+      return;
+    }
     if (!name.trim()) {
       setError("Please enter your name.");
       return;
@@ -54,8 +61,16 @@ export default function JoinOrder() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Join failed");
 
+      // Save to localStorage so user info persists per tab/browser
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("userName", name);
+
       alert("Successfully joined order!");
-      navigate("/open-orders");
+      navigate(
+        `/order-details/${orderId}?userId=${encodeURIComponent(
+          userId
+        )}&name=${encodeURIComponent(name)}`
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -77,6 +92,14 @@ export default function JoinOrder() {
       <p>
         <strong>Total:</strong> £{orderInfo.totalPrice}
       </p>
+
+      <input
+        type="text"
+        value={userId}
+        onChange={(e) => setUserId(e.target.value)}
+        placeholder="Your User ID (unique)"
+        className="mt-4 p-2 w-full border rounded"
+      />
 
       <input
         type="text"

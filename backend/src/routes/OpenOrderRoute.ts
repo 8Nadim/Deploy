@@ -4,6 +4,7 @@ import {
   getAllOpenOrders,
   joinOpenOrder,
   getOpenOrderById,
+  leaveOpenOrder,
 } from "../controllers/OpenOrderController";
 
 const router = express.Router();
@@ -12,6 +13,7 @@ router.post("/", createOpenOrder);
 router.get("/", getAllOpenOrders);
 router.get("/:orderId", getOpenOrderById);
 router.post("/join", joinOpenOrder);
+router.delete("/:orderId/leave", leaveOpenOrder);
 
 router.get("/demoopenorderid123456789012345", (_req, res) => {
   res.json({
