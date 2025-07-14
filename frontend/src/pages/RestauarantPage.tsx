@@ -18,10 +18,9 @@ const RestaurantPage = () => {
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
-        const res = await axios.get(
+        const res = await axios.get<{ data: Restaurant[] }>(
           "http://localhost:7000/api/restaurant/search"
         );
-        console.log("Fetched restaurants:", res.data.data);
         setRestaurants(res.data.data);
       } catch (err) {
         console.error("Error fetching restaurants", err);
@@ -48,7 +47,7 @@ const RestaurantPage = () => {
         imageUrl: "http://example.com/image.jpg",
       };
 
-      const res = await axios.post(
+      const res = await axios.post<Restaurant>(
         "http://localhost:7000/api/restaurant",
         payload
       );
