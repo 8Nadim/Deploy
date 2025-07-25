@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@tanstack/react-query": "^5.66.0",
+    "axios": "^1.7.9",
+    "express-validator": "^7.2.1",
+    "react-query": "^3.39.3"
+  }
+}
